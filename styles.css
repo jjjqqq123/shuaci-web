@@ -50,6 +50,9 @@ select:focus, input:focus, textarea:focus { border-color: #96aafa; box-shadow: 0
 .mode-tabs, .segmented { display: flex; gap: 4px; padding: 4px; border-radius: 15px; background: #eef2f8; }
 .mode-tabs button, .segmented button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); font-weight: 700; }
 .mode-tabs button.active, .segmented button.active { color: var(--primary); background: #fff; box-shadow: 0 3px 10px rgba(30,48,90,.08); }
+.mode-tabs .mode-btn { color: #d6deec; background: #202a3e; opacity: .78; transition: color .18s,background .18s,box-shadow .18s,opacity .18s,transform .18s; }
+.mode-tabs .mode-btn.active { color: #fff; background: linear-gradient(135deg,var(--primary),var(--primary-2)); box-shadow: 0 5px 14px rgba(49,94,251,.26); opacity: 1; }
+.mode-tabs .mode-btn:active { transform: scale(.97); }
 .stats { margin: 16px 0; display: grid; grid-template-columns: repeat(3,1fr); padding: 16px 24px; text-align: center; color: var(--muted); }
 .stats b { margin-left: 6px; color: var(--ink); }
 

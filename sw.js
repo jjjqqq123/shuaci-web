@@ -1,4 +1,4 @@
-const VERSION = 'shuaci-v7-public-20261019-mobile-2';
+const VERSION = 'shuaci-v7-public-20261020-toggles-1';
 const APP_CACHE = `${VERSION}-app`;
 const RUNTIME_CACHE = 'shuaci-v7-audio-runtime';
 const BASE = new URL('./', self.registration.scope);

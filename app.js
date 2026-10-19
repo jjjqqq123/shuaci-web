@@ -49,8 +49,10 @@ const state = {
   index: 0,
   correct: 0,
   wrong: 0,
-  mode: 'cn',
-  promptMode: 'cn',
+  showChinese: true,
+  autoAudio: true,
+  randomOrder: false,
+  sequenceKeys: [],
   answered: false,
   correctionRequired: false,
   reviewMode: false,
@@ -138,7 +140,7 @@ function toast(message) {
 
 function currentWord() { return state.sequence[state.index] || null; }
 function currentChapter() {
-  if (state.chapterId === 0) return { id: 0, title: '全部随机', displayTitle: `🎲 全部随机（${state.studyData.totalWords}）`, words: [...state.coreMap.values()] };
+  if (state.chapterId === 0) return { id: 0, title: '全部单词', displayTitle: `🎲 全部单词（${state.studyData.totalWords}）`, words: [...state.coreMap.values()] };
   if (state.chapterId === state.studyData.extraChapter.id) return state.studyData.extraChapter;
   return state.studyData.chapters.find((chapter) => chapter.id === state.chapterId) || state.studyData.chapters[0];
 }
@@ -228,11 +230,33 @@ async function loadData() {
 
 function buildChapterOptions() {
   const options = [
-    { id: 0, label: `🎲 全部单词随机（${state.studyData.totalWords}）` },
+    { id: 0, label: `🎲 全部单词（${state.studyData.totalWords}）` },
     ...state.studyData.chapters.map((chapter) => ({ id: chapter.id, label: chapter.displayTitle })),
     { id: state.studyData.extraChapter.id, label: state.studyData.extraChapter.displayTitle },
   ];
   els.chapter.innerHTML = options.map((option) => `<option value="${option.id}">${escapeHtml(option.label)}</option>`).join('');
+}
+
+function syncModeButtons() {
+  const enabled = { cn: state.showChinese, audio: state.autoAudio, random: state.randomOrder };
+  $$('.mode-btn').forEach((button) => {
+    const active = Boolean(enabled[button.dataset.mode]);
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+}
+
+function restoreSequence(words, keys) {
+  if (!Array.isArray(keys) || !keys.length) return null;
+  const byKey = new Map(words.map((word) => [word.key, word]));
+  const restored = [];
+  const seen = new Set();
+  for (const key of keys) {
+    const word = byKey.get(key);
+    if (word && !seen.has(key)) { restored.push(word); seen.add(key); }
+  }
+  for (const word of words) if (!seen.has(word.key)) restored.push(word);
+  return restored.length === words.length ? restored : null;
 }
 
 async function loadProgress() {
@@ -240,8 +264,19 @@ async function loadProgress() {
   state.index = Number(saved?.index || 0);
   state.correct = Number(saved?.correct || 0);
   state.wrong = Number(saved?.wrong || 0);
-  state.mode = saved?.mode || 'cn';
-  $$('.mode-btn').forEach((button) => button.classList.toggle('active', button.dataset.mode === state.mode));
+  if (typeof saved?.showChinese === 'boolean') {
+    state.showChinese = saved.showChinese;
+    state.autoAudio = saved.autoAudio !== false;
+    state.randomOrder = Boolean(saved.randomOrder);
+  } else {
+    const legacyMode = saved?.mode || 'cn';
+    state.showChinese = legacyMode !== 'audio';
+    state.autoAudio = true;
+    state.randomOrder = legacyMode === 'random' || (!saved && state.chapterId === 0);
+  }
+  state.sequenceKeys = Array.isArray(saved?.sequenceKeys) ? saved.sequenceKeys : [];
+  syncModeButtons();
+  return saved;
 }
 
 async function saveProgress() {
@@ -251,7 +286,11 @@ async function saveProgress() {
     index: state.index,
     correct: state.correct,
     wrong: state.wrong,
-    mode: state.mode,
+    mode: state.randomOrder ? 'random' : (state.showChinese ? 'cn' : 'audio'),
+    showChinese: state.showChinese,
+    autoAudio: state.autoAudio,
+    randomOrder: state.randomOrder,
+    sequenceKeys: state.randomOrder ? state.sequence.map((word) => word.key) : [],
     updatedAt: new Date().toISOString(),
   });
 }
@@ -262,7 +301,8 @@ async function selectChapter(id, reset = false) {
   els.chapter.value = String(state.chapterId);
   await loadProgress();
   const words = currentChapter().words;
-  state.sequence = state.chapterId === 0 ? shuffle(words) : [...words];
+  const restored = !reset && state.randomOrder ? restoreSequence(words, state.sequenceKeys) : null;
+  state.sequence = restored || (state.randomOrder ? shuffle(words) : [...words]);
   if (reset || state.index >= state.sequence.length) state.index = 0;
   state.answered = false;
   state.correctionRequired = false;
@@ -270,8 +310,11 @@ async function selectChapter(id, reset = false) {
   updateCounts();
 }
 
-function resolvePromptMode() {
-  state.promptMode = state.mode === 'random' ? (Math.random() < .5 ? 'cn' : 'audio') : state.mode;
+function updateStudyPrompt(word = currentWord()) {
+  if (!word) return;
+  if (state.showChinese) els.prompt.textContent = word.meaningCN;
+  else if (state.autoAudio) els.prompt.textContent = '听发音，拼出单词';
+  else els.prompt.textContent = '无提示模式：根据字母长度回忆单词';
 }
 
 function renderSlots(word, input = '') {
@@ -295,7 +338,6 @@ function renderStudyWord() {
     updateCounts();
     return;
   }
-  resolvePromptMode();
   state.answered = false;
   state.correctionRequired = false;
   els.input.hidden = false;
@@ -306,12 +348,12 @@ function renderStudyWord() {
   els.answer.hidden = true;
   els.answer.replaceChildren();
   els.submit.textContent = '提交 / 下一词';
-  els.prompt.textContent = state.promptMode === 'cn' ? word.meaningCN : '听发音，拼出单词';
+  updateStudyPrompt(word);
   renderSlots(word.word);
   updateStarButton();
   updateStats();
   setTimeout(() => els.input.focus({ preventScroll: true }), 30);
-  playWord(word, true);
+  if (state.autoAudio) playWord(word, true);
 }
 
 function updateStats() {
@@ -1253,9 +1295,33 @@ async function downloadCoreAudio() {
 function bindEvents() {
   els.chapter.addEventListener('change', () => selectChapter(els.chapter.value, true));
   $$('.mode-btn').forEach((button) => button.addEventListener('click', async () => {
-    state.mode = button.dataset.mode;
-    $$('.mode-btn').forEach((item) => item.classList.toggle('active', item === button));
-    await saveProgress(); renderStudyWord();
+    const mode = button.dataset.mode;
+    if (mode === 'cn') {
+      state.showChinese = !state.showChinese;
+      updateStudyPrompt();
+    } else if (mode === 'audio') {
+      state.autoAudio = !state.autoAudio;
+      if (state.autoAudio) playWord(currentWord(), true);
+      else state.audio?.pause();
+      updateStudyPrompt();
+    } else {
+      state.randomOrder = !state.randomOrder;
+      const current = currentWord();
+      const words = currentChapter().words;
+      if (state.randomOrder) {
+        const remaining = words.filter((word) => word.key !== current?.key);
+        state.sequence = current ? [current, ...shuffle(remaining)] : shuffle(words);
+        state.index = 0;
+        toast('已打乱本单元顺序');
+      } else {
+        state.sequence = [...words];
+        state.index = Math.max(0, words.findIndex((word) => word.key === current?.key));
+        toast('已恢复本单元顺序');
+      }
+      renderStudyWord();
+    }
+    syncModeButtons();
+    await saveProgress();
   }));
   els.input.addEventListener('input', () => renderSlots(currentWord()?.word || '', els.input.value));
   els.input.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); submitAnswer(); } });
@@ -1263,7 +1329,7 @@ function bindEvents() {
   els.star.addEventListener('click', () => toggleStar());
   els.replay.addEventListener('click', () => playWord(currentWord()));
   els.promptAudio.addEventListener('click', () => playWord(currentWord()));
-  els.restart.addEventListener('click', async () => { state.index = 0; state.correct = 0; state.wrong = 0; if (state.chapterId === 0) state.sequence = shuffle(state.sequence); await saveProgress(); renderStudyWord(); });
+  els.restart.addEventListener('click', async () => { state.index = 0; state.correct = 0; state.wrong = 0; state.sequence = state.randomOrder ? shuffle(currentChapter().words) : [...currentChapter().words]; await saveProgress(); renderStudyWord(); });
   $('#openOverviewBtn').addEventListener('click', () => switchView('overview'));
   $$('.return-study').forEach((button) => button.addEventListener('click', () => switchView('study')));
   $$('.nav-btn').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));

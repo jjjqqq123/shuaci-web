@@ -29,10 +29,10 @@
     <section id="studyView" class="view" data-view="study" hidden>
       <div class="study-toolbar panel">
         <label><span>学习单元</span><select id="chapterSelect"></select></label>
-        <div class="mode-tabs" role="group" aria-label="刷词模式">
-          <button class="mode-btn active" data-mode="cn">看中文</button>
-          <button class="mode-btn" data-mode="audio">听音</button>
-          <button class="mode-btn" data-mode="random">随机</button>
+        <div class="mode-tabs" role="group" aria-label="刷词提示开关">
+          <button class="mode-btn active" data-mode="cn" aria-pressed="true">中文</button>
+          <button class="mode-btn active" data-mode="audio" aria-pressed="true">听语音</button>
+          <button class="mode-btn" data-mode="random" aria-pressed="false">随机</button>
         </div>
         <button id="openOverviewBtn" class="soft-btn">词汇总览</button>
       </div>
