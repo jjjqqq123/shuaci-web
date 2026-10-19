@@ -1317,7 +1317,6 @@ function bindEvents() {
     if (event.button !== 0 || event.target.closest('textarea,input,button')) return;
     if (event.pointerType === 'mouse' && event.target.closest('p,blockquote,.sense-row,.level-sense,.level-phrases,.detail-extra,.detail-example')) return;
     detailGesture = { id: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now(), horizontal: false };
-    try { els.sheet.setPointerCapture(event.pointerId); } catch {}
   });
   els.sheet.addEventListener('pointermove', (event) => {
     if (!detailGesture || event.pointerId !== detailGesture.id) return;
@@ -1328,7 +1327,9 @@ function bindEvents() {
       detailGesture.horizontal = true;
     }
     if (!detailGesture.horizontal) return;
-    event.preventDefault();
+    // Never cancel a real touch scroll. `touch-action: pan-y` leaves horizontal
+    // gestures to us while allowing the browser to own vertical scrolling.
+    if (event.pointerType === 'mouse') event.preventDefault();
     getSelection()?.removeAllRanges();
     const limited = Math.max(-innerWidth * 0.42, Math.min(innerWidth * 0.42, dx));
     els.sheet.classList.add('is-dragging');
