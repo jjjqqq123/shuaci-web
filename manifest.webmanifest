@@ -1,0 +1,10 @@
+{
+  "name": "刷词神器",
+  "short_name": "刷词神器",
+  "description": "四级刷词、离线词典、错题与生词复习",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#315efb",
+  "icons": [{"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}

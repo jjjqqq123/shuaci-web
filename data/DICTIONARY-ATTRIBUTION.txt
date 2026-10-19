@@ -1,0 +1,28 @@
+This dictionary is distributed under Creative Commons Attribution-ShareAlike 4.0 International (CC-BY-SA-4.0).
+https://creativecommons.org/licenses/by-sa/4.0/
+
+It is built from the following sources:
+
+  * omw-cmn: Chinese Open Wordnet, via Open Multilingual Wordnet 1.4
+  * pwn30: Princeton University WordNet 3.0
+  * wikt-en-cmn: English Wiktionary via kaikki.org (wiktextract)
+
+-- WordNet 3.0 License (Princeton University) --
+WordNet Release 3.0 Copyright 2006 by Princeton University. All rights reserved. This copyright notice must be retained on all copies, including modified copies. The name of Princeton University or Princeton may not be used in advertising or publicity pertaining to distribution of the software and/or database without specific, written prior permission.
+
+-- Additional CET study metadata used by the local v6 preview --
+
+CET-4/CET-6 level-specific senses, word-formation notes, related-word notes,
+and cited exam contexts are derived from the locally retained
+KyleBing/english-vocabulary data set:
+https://github.com/KyleBing/english-vocabulary
+
+This additional source is kept separate from the KOReader/WordNet attribution
+above. Its original notices and repository history remain the source of record.
+
+-- Local v7 pronunciation assets --
+
+The v7 local preview contains pre-generated, independent MP3 pronunciation
+clips for offline playback. British clips use en-GB-SoniaNeural and American
+clips use en-US-JennyNeural. Playback does not call the device speech engine
+and the application contains no runtime API key or personal credential.

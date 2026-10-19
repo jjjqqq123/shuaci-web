@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#315efb">
+  <meta name="description" content="四级刷词、离线词典、错题与生词复习">
+  <title>刷词神器</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span class="brand-mark">词</span><div><strong>刷词神器</strong><small>CET-4/6 · v7 本地检查版</small></div></div>
+    <div class="header-tools">
+      <span id="syncBadge" class="status-pill">本机永久保存</span>
+      <button id="installBtn" class="ghost-btn" hidden>安装到桌面</button>
+    </div>
+  </header>
+
+  <main id="app" aria-live="polite">
+    <section id="loadingView" class="loading-view">
+      <div class="loader"></div>
+      <h1>正在准备词库</h1>
+      <p id="loadingText">载入 5.9 万词离线词典…</p>
+    </section>
+
+    <section id="studyView" class="view" data-view="study" hidden>
+      <div class="study-toolbar panel">
+        <label><span>学习单元</span><select id="chapterSelect"></select></label>
+        <div class="mode-tabs" role="group" aria-label="刷词模式">
+          <button class="mode-btn active" data-mode="cn">看中文</button>
+          <button class="mode-btn" data-mode="audio">听音</button>
+          <button class="mode-btn" data-mode="random">随机</button>
+        </div>
+        <button id="openOverviewBtn" class="soft-btn">词汇总览</button>
+      </div>
+
+      <div class="stats panel">
+        <span>📊 进度 <b id="progressText">0/0</b></span>
+        <span>✅ 正确 <b id="correctText">0</b></span>
+        <span>❌ 错误 <b id="wrongText">0</b></span>
+      </div>
+
+      <article id="studyCard" class="study-card panel">
+        <button id="promptAudioBtn" class="audio-chip" aria-label="播放单词发音">🔊 <span>自动发音</span></button>
+        <h1 id="promptText">准备开始</h1>
+        <div id="letterSlots" class="letter-slots" aria-hidden="true"></div>
+        <input id="answerInput" class="answer-input" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" placeholder="输入单词" aria-label="输入英文单词">
+        <p class="input-tip">严格按原拼写输入；答错后必须完整订正一次才能进入下一词。</p>
+        <p id="resultText" class="result-text" role="status"></p>
+        <div id="answerPanel" class="answer-panel" hidden></div>
+        <div class="study-actions">
+          <button id="starBtn" class="soft-btn">★ 标记生词 <kbd>/</kbd></button>
+          <button id="replayBtn" class="soft-btn">🔊 再听一遍</button>
+          <button id="restartBtn" class="soft-btn">↻ 重新开始</button>
+          <button id="submitBtn" class="primary-btn">提交 / 下一词</button>
+        </div>
+        <p class="keyboard-tip">回车判断 · 看完答案后空格进入下一词 · <kbd>/</kbd> 标记生词</p>
+      </article>
+
+      <div class="books-preview">
+        <button class="book-card wrong" data-book="wrong"><span>错误本</span><b id="wrongBookCount">0</b><small>连续答对三遍自动移出</small></button>
+        <button class="book-card starred" data-book="starred"><span>生词本</span><b id="starBookCount">0</b><small>连续答对三遍自动移出</small></button>
+      </div>
+    </section>
+
+    <section id="overviewView" class="view" data-view="overview" hidden>
+      <div class="section-head">
+        <div><p class="eyebrow">当前单元</p><h1 id="overviewTitle">词汇总览</h1></div>
+        <button class="primary-btn return-study">返回刷词</button>
+      </div>
+      <div class="overview-controls panel">
+        <input id="overviewSearch" type="search" placeholder="搜索当前单元的单词或中文">
+        <button id="overviewOriginal" class="filter-btn active">单元顺序</button>
+        <button id="overviewAlpha" class="filter-btn">A–Z 排序</button>
+        <button id="overviewShuffle" class="filter-btn">乱序</button>
+      </div>
+      <div id="overviewList" class="word-grid"></div>
+    </section>
+
+    <section id="dictionaryView" class="view" data-view="dictionary" hidden>
+      <div class="section-head"><div><p id="dictionaryEyebrow" class="eyebrow">载入词典…</p><h1>权威词典</h1></div></div>
+      <div class="dictionary-controls panel">
+        <input id="dictionarySearch" type="search" placeholder="输入英文或中文释义">
+        <div class="filter-row">
+          <button class="dict-filter active" data-filter="all">全部</button>
+          <button class="dict-filter" data-filter="cet4">四级</button>
+          <button class="dict-filter" data-filter="cet6">六级</button>
+        </div>
+      </div>
+      <nav id="dictionaryAlphabet" class="alphabet-bar panel" aria-label="按首字母筛选词典"></nav>
+      <p id="dictionarySummary" class="list-summary"></p>
+      <div id="dictionaryList" class="dictionary-list"></div>
+      <div id="dictionarySentinel" class="dictionary-sentinel" aria-live="polite"><span class="sentinel-spinner"></span><span>继续下滑将自动加载</span></div>
+    </section>
+
+    <section id="booksView" class="view" data-view="books" hidden>
+      <div class="section-head"><div><p class="eyebrow">按稳定词形保存</p><h1>复习本</h1></div></div>
+      <div class="book-tabs panel">
+        <button class="book-tab active" data-book="wrong">错误本 <b id="wrongTabCount">0</b></button>
+        <button class="book-tab" data-book="starred">生词本 <b id="starTabCount">0</b></button>
+        <button id="startBookReview" class="primary-btn">开始复习</button>
+      </div>
+      <div id="bookList" class="book-list"></div>
+    </section>
+
+    <section id="settingsView" class="view" data-view="settings" hidden>
+      <div class="section-head"><div><p class="eyebrow">离线与数据</p><h1>设置</h1></div></div>
+      <div class="settings-grid">
+        <article class="settings-card panel">
+          <h2>发音口音</h2>
+          <div class="segmented"><button class="accent-btn active" data-accent="uk">英音</button><button class="accent-btn" data-accent="us">美音</button></div>
+          <p>英音和美音都使用独立音频文件，不调用设备自带语言。这里选择刷词时自动播放的默认口音。</p>
+        </article>
+        <article class="settings-card panel">
+          <h2>离线资源</h2>
+          <p id="offlineStatus">页面与词典可离线使用；完整双音词典包下载后，约六万词可完全离线发音。</p>
+          <button id="downloadCoreAudio" class="primary-btn">下载完整英美双音包</button>
+          <progress id="audioProgress" value="0" max="100" hidden></progress>
+        </article>
+        <article class="settings-card panel">
+          <h2>备份与迁移</h2>
+          <p>错题、生词、笔记和进度以单词为键保存，升级页面不会因编号变化而丢失。</p>
+          <div class="settings-actions"><button id="exportBtn" class="soft-btn">导出备份</button><label class="soft-btn file-label">导入备份<input id="importInput" type="file" accept="application/json" hidden></label></div>
+        </article>
+        <article class="settings-card panel">
+          <h2>词典说明</h2>
+          <p>通用中文释义来自 KOReader en-zh 开放词典；四六级分级义项、真题语境及构词助记来自本地四级、六级完整词库；同义关系来自 Princeton WordNet。回退词条会明确标记。</p>
+          <a href="./data/DICTIONARY-ATTRIBUTION.txt" target="_blank">查看来源与许可证</a>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="主导航">
+    <button class="nav-btn active" data-view="study"><span>✍️</span>刷词</button>
+    <button class="nav-btn" data-view="overview"><span>▦</span>总览</button>
+    <button class="nav-btn" data-view="dictionary"><span>⌕</span>词典</button>
+    <button class="nav-btn" data-view="books"><span>★</span>复习</button>
+    <button class="nav-btn" data-view="settings"><span>⚙</span>设置</button>
+  </nav>
+
+  <div id="detailOverlay" class="detail-overlay" aria-hidden="true">
+    <div class="overlay-shade" data-close-detail></div>
+    <article id="detailSheet" class="detail-sheet" role="dialog" aria-modal="true" aria-label="词汇详情">
+      <button class="close-btn" data-close-detail aria-label="关闭">×</button>
+      <div id="detailScroll" class="detail-scroll">
+        <div id="detailContent"></div>
+      </div>
+      <div id="detailSwipeCue" class="detail-swipe-cue" hidden>‹ 左右滑动切换单词 ›</div>
+    </article>
+  </div>
+
+  <div id="lookupOverlay" class="lookup-overlay" aria-hidden="true">
+    <div class="lookup-shade" data-close-lookup></div>
+    <aside id="lookupCard" class="lookup-card" role="dialog" aria-modal="true" aria-label="快速查词">
+      <button class="lookup-close" data-close-lookup aria-label="关闭快速查词">×</button>
+      <div id="lookupContent"></div>
+    </aside>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

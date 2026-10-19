@@ -1,0 +1,12 @@
+.openai/
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*backup*.json
+*备份*.json
+node_modules/
+.DS_Store
+Thumbs.db
